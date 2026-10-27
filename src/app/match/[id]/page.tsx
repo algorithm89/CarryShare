@@ -7,6 +7,7 @@ import { AlertTriangle, PackageCheck, SearchX, Weight } from "lucide-react";
 import { FlightCard } from "@/components/flight/flight-card";
 import { TravelerCard } from "@/components/traveler/traveler-card";
 import { RequestMatchActions } from "@/components/match/request-match-actions";
+import { ProtectionPanel } from "@/components/protection/protection-panel";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -31,6 +32,9 @@ interface LoadedMatchDetail {
 export default function MatchDetailPage() {
   const params = useParams<{ id: string }>();
   const [result, setResult] = useState<LoadedMatchDetail | null>(null);
+  const [createdMatch, setCreatedMatch] = useState<
+    { id: string; status: MatchStatus } | undefined
+  >();
   const loading = result === null || result.listingId !== params.id;
 
   useEffect(() => {
@@ -63,7 +67,7 @@ export default function MatchDetailPage() {
 
   const listing = result?.listing;
   const flight = result?.flight;
-  const existingMatch = result?.existingMatch;
+  const activeMatch = createdMatch ?? result?.existingMatch;
 
   if (loading) {
     return (
@@ -145,9 +149,16 @@ export default function MatchDetailPage() {
         <RequestMatchActions
           listingId={listing.id}
           travelerFirstName={listing.traveler.firstName}
-          initialMatch={existingMatch}
+          initialMatch={activeMatch}
+          onMatchCreated={setCreatedMatch}
         />
       </div>
+
+      {activeMatch && (
+        <div className="mt-4">
+          <ProtectionPanel matchId={activeMatch.id} flight={flight} />
+        </div>
+      )}
 
       <div className="mt-4 flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
         <AlertTriangle className="mt-0.5 size-4 shrink-0" />

@@ -1,0 +1,9 @@
+services:
+  cocarry:
+    build: .
+    image: cocarry:latest
+    container_name: cocarry
+    restart: unless-stopped
+    # Bound to localhost only; the reverse proxy on the host routes cocarry.net here.
+    ports:
+      - "127.0.0.1:3001:3000"

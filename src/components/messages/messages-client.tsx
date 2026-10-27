@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { ArrowLeft, MessageCircleOff } from "lucide-react";
 import { EmptyState } from "@/components/shared/empty-state";
 import { TravelerAvatar } from "@/components/shared/traveler-avatar";
 import { MessageThread } from "@/components/messages/message-thread";
+import { ProtectionStatusBadge } from "@/components/protection/protection-status-badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   getLoggedInUser,
@@ -193,7 +195,7 @@ export function MessagesClient({ initialMatchId }: MessagesClientProps) {
                 <ArrowLeft className="size-5 text-muted-foreground" />
               </button>
               <TravelerAvatar user={selected.counterpart} size="sm" />
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-semibold text-foreground">
                   {fullName(selected.counterpart)}
                 </p>
@@ -203,6 +205,11 @@ export function MessagesClient({ initialMatchId }: MessagesClientProps) {
                   {selected.flight.destinationCode}
                 </p>
               </div>
+              {selected.protectionStatus && (
+                <Link href={`/match/${selected.listing.id}`} className="shrink-0">
+                  <ProtectionStatusBadge status={selected.protectionStatus} />
+                </Link>
+              )}
             </div>
             <MessageThread
               messages={threadMessages}

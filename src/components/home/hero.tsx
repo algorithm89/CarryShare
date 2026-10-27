@@ -10,13 +10,16 @@ export function Hero() {
         className="absolute inset-x-0 top-0 -z-10 h-[520px] sm:h-[640px]"
       >
         <Image
-          src="/BG3.png"
+          src="/hero-bg.jpg"
           alt=""
           fill
           priority
+          quality={90}
+          sizes="100vw"
           className="object-cover object-top"
+          style={{ opacity: 0.4 }}
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-white/5 via-white/30 to-background" />
+        <div className="absolute inset-0 bg-gradient-to-b from-white/40 via-white/60 to-background" />
       </div>
 
       <div className="relative mx-auto max-w-6xl px-4 pt-14 pb-10 sm:px-6 sm:pt-20 sm:pb-14 lg:px-8">

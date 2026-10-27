@@ -34,7 +34,28 @@ import {
 } from "@/data/messages";
 import { getTripsForUser, upsertTripForListing } from "@/data/trips";
 import { CURRENT_USER_ID, getCurrentUser, getUserById } from "@/data/users";
-import type { Flight, Listing, Match, Message, Trip, User } from "@/types";
+import {
+  authorizeCommitment as authorizeCommitmentRecord,
+  cancelProtection as cancelProtectionRecord,
+  createProtectionForMatch,
+  getProtectionByMatchId,
+  markProtectionCompleted as markProtectionCompletedRecord,
+  reconfirmCommitment as reconfirmCommitmentRecord,
+  reportNoShow as reportNoShowRecord,
+  resolveClaim as resolveClaimRecord,
+} from "@/data/protection";
+import type {
+  CancellationReason,
+  ClaimResolution,
+  Flight,
+  Listing,
+  Match,
+  Message,
+  Protection,
+  ProtectionCommitment,
+  Trip,
+  User,
+} from "@/types";
 
 // Simulates network latency so loading states feel real. Set to 0 to disable.
 const MOCK_LATENCY_MS = 0;
@@ -131,6 +152,8 @@ export interface MatchWithDetails extends Match {
   responder: User;
   /** The user on the other side of the current logged-in user, if applicable. */
   counterpart: User;
+  /** CarryShare Protection status for this match, if protection has been set up. */
+  protectionStatus?: Protection["status"];
 }
 
 function attachMatchDetails(match: Match): MatchWithDetails {
@@ -143,7 +166,25 @@ function attachMatchDetails(match: Match): MatchWithDetails {
   }
   const counterpart =
     match.requesterId === CURRENT_USER_ID ? responder : requester;
-  return { ...match, flight, listing, requester, responder, counterpart };
+  const protectionStatus = getProtectionByMatchId(match.id)?.status;
+  return {
+    ...match,
+    flight,
+    listing,
+    requester,
+    responder,
+    counterpart,
+    protectionStatus,
+  };
+}
+
+/** 6 hours before departure, in ISO form. */
+function computeReconfirmDeadline(flight: Flight): string {
+  const departure = new Date(
+    `${flight.departureDate}T${flight.departureTime}:00Z`
+  );
+  departure.setUTCHours(departure.getUTCHours() - 6);
+  return departure.toISOString();
 }
 
 export async function getMatch(
@@ -176,9 +217,29 @@ export async function requestMatch(
 ): Promise<Match> {
   const listing = getListingById(listingId);
   if (!listing) throw new Error(`Listing ${listingId} not found`);
-  return resolveAfterLatency(
-    requestMatchRecord(listingId, requesterId, listing.userId, listing.flightId)
+  const flight = getFlightById(listing.flightId);
+  if (!flight) throw new Error(`Flight ${listing.flightId} not found`);
+
+  const match = requestMatchRecord(
+    listingId,
+    requesterId,
+    listing.userId,
+    listing.flightId
   );
+
+  // Every match gets a CarryShare Protection commitment, sized off the
+  // listing's approximate weight (a simple illustrative placeholder rate
+  // until a real baggage-fee source is wired in).
+  const totalAmountCents = Math.max(3000, Math.round(listing.approxWeightKg * 800));
+  createProtectionForMatch(
+    match.id,
+    requesterId,
+    listing.userId,
+    totalAmountCents,
+    computeReconfirmDeadline(flight)
+  );
+
+  return resolveAfterLatency(match);
 }
 
 // ---------------------------------------------------------------------------
@@ -222,4 +283,107 @@ export async function getTripsForCurrentUser(): Promise<TripWithDetails[]> {
     })
     .filter((trip): trip is TripWithDetails => trip !== undefined);
   return resolveAfterLatency(details);
+}
+
+// ---------------------------------------------------------------------------
+// CarryShare Protection
+// ---------------------------------------------------------------------------
+
+export interface ProtectionCommitmentWithUser extends ProtectionCommitment {
+  user: User;
+}
+
+export interface ProtectionWithDetails extends Omit<Protection, "commitments"> {
+  commitments: [ProtectionCommitmentWithUser, ProtectionCommitmentWithUser];
+}
+
+function attachProtectionDetails(protection: Protection): ProtectionWithDetails {
+  const commitments = protection.commitments.map((commitment) => {
+    const user = getUserById(commitment.userId);
+    if (!user) {
+      throw new Error(`No user found for commitment ${commitment.userId}`);
+    }
+    return { ...commitment, user };
+  }) as [ProtectionCommitmentWithUser, ProtectionCommitmentWithUser];
+  return { ...protection, commitments };
+}
+
+export async function getProtectionForMatch(
+  matchId: string
+): Promise<ProtectionWithDetails | undefined> {
+  const protection = getProtectionByMatchId(matchId);
+  return resolveAfterLatency(
+    protection ? attachProtectionDetails(protection) : undefined
+  );
+}
+
+export async function authorizeMyCommitment(
+  matchId: string,
+  userId: string
+): Promise<ProtectionWithDetails | undefined> {
+  const protection = authorizeCommitmentRecord(matchId, userId);
+  return resolveAfterLatency(
+    protection ? attachProtectionDetails(protection) : undefined
+  );
+}
+
+export async function reconfirmMyTrip(
+  matchId: string,
+  userId: string
+): Promise<ProtectionWithDetails | undefined> {
+  const protection = reconfirmCommitmentRecord(matchId, userId);
+  return resolveAfterLatency(
+    protection ? attachProtectionDetails(protection) : undefined
+  );
+}
+
+export async function cancelMatchProtection(
+  matchId: string,
+  userId: string,
+  reason: CancellationReason
+): Promise<ProtectionWithDetails | undefined> {
+  const protection = cancelProtectionRecord(matchId, userId, reason);
+  return resolveAfterLatency(
+    protection ? attachProtectionDetails(protection) : undefined
+  );
+}
+
+export async function reportNoShow(
+  matchId: string,
+  reportedByUserId: string,
+  aboutUserId: string,
+  receiptFileName?: string,
+  note?: string
+): Promise<ProtectionWithDetails | undefined> {
+  const protection = reportNoShowRecord(
+    matchId,
+    reportedByUserId,
+    aboutUserId,
+    receiptFileName,
+    note
+  );
+  return resolveAfterLatency(
+    protection ? attachProtectionDetails(protection) : undefined
+  );
+}
+
+/** Demo-only: in production this is a platform review decision, not a user action. */
+export async function resolveProtectionClaim(
+  matchId: string,
+  resolution: ClaimResolution
+): Promise<ProtectionWithDetails | undefined> {
+  const protection = resolveClaimRecord(matchId, resolution);
+  return resolveAfterLatency(
+    protection ? attachProtectionDetails(protection) : undefined
+  );
+}
+
+/** Demo-only: simulates the trip having gone off without a hitch. */
+export async function markProtectionCompleted(
+  matchId: string
+): Promise<ProtectionWithDetails | undefined> {
+  const protection = markProtectionCompletedRecord(matchId);
+  return resolveAfterLatency(
+    protection ? attachProtectionDetails(protection) : undefined
+  );
 }
