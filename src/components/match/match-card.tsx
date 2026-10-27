@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
+import { ProtectionStatusBadge } from "@/components/protection/protection-status-badge";
 import { TravelerAvatar } from "@/components/shared/traveler-avatar";
 import { Badge } from "@/components/ui/badge";
 import { fullName } from "@/lib/format";
@@ -41,6 +42,12 @@ export function MatchCard({ match }: MatchCardProps) {
           {" → "}
           {match.flight.destinationCode}
         </p>
+        {match.protectionStatus && (
+          <ProtectionStatusBadge
+            status={match.protectionStatus}
+            className="mt-1"
+          />
+        )}
       </div>
       <Badge
         variant="outline"

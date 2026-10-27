@@ -12,12 +12,14 @@ interface RequestMatchActionsProps {
   listingId: string;
   travelerFirstName: string;
   initialMatch?: { id: string; status: MatchStatus };
+  onMatchCreated?: (match: { id: string; status: MatchStatus }) => void;
 }
 
 export function RequestMatchActions({
   listingId,
   travelerFirstName,
   initialMatch,
+  onMatchCreated,
 }: RequestMatchActionsProps) {
   const router = useRouter();
   const [match, setMatch] = useState(initialMatch);
@@ -27,7 +29,9 @@ export function RequestMatchActions({
     setSubmitting(true);
     try {
       const created = await requestMatch(listingId, CURRENT_USER_ID);
-      setMatch({ id: created.id, status: created.status });
+      const summary = { id: created.id, status: created.status };
+      setMatch(summary);
+      onMatchCreated?.(summary);
       toast.success("Match requested!", {
         description: `${travelerFirstName} will be notified. You can message them now.`,
       });

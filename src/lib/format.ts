@@ -1,3 +1,4 @@
+import { formatDistanceToNow } from "date-fns";
 import type { User } from "@/types";
 
 export function formatDateLong(isoDate: string): string {
@@ -28,6 +29,27 @@ export function formatMessageTimestamp(isoDateTime: string): string {
   return new Date(isoDateTime).toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
+  });
+}
+
+export function formatDateTimeMedium(isoDateTime: string): string {
+  return new Date(isoDateTime).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+/** e.g. "in 10 days" or "3 hours ago". */
+export function formatRelativeToNow(isoDateTime: string): string {
+  return formatDistanceToNow(new Date(isoDateTime), { addSuffix: true });
+}
+
+export function formatCents(cents: number): string {
+  return (cents / 100).toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
   });
 }
 

@@ -20,6 +20,8 @@ export const users: User[] = [
     tripsCompleted: 9,
     carrySharesCompleted: 6,
     memberSince: "2025-02-11",
+    lateCancellationCount: 0,
+    noShowCount: 0,
   },
   {
     id: "u2",
@@ -34,6 +36,8 @@ export const users: User[] = [
     tripsCompleted: 15,
     carrySharesCompleted: 11,
     memberSince: "2024-11-03",
+    lateCancellationCount: 0,
+    noShowCount: 0,
   },
   {
     id: "u3",
@@ -48,6 +52,8 @@ export const users: User[] = [
     tripsCompleted: 22,
     carrySharesCompleted: 13,
     memberSince: "2024-06-20",
+    lateCancellationCount: 0,
+    noShowCount: 0,
   },
   {
     id: "u4",
@@ -62,6 +68,8 @@ export const users: User[] = [
     tripsCompleted: 6,
     carrySharesCompleted: 4,
     memberSince: "2025-05-02",
+    lateCancellationCount: 0,
+    noShowCount: 0,
   },
   {
     id: "u5",
@@ -76,6 +84,8 @@ export const users: User[] = [
     tripsCompleted: 5,
     carrySharesCompleted: 5,
     memberSince: "2025-08-14",
+    lateCancellationCount: 0,
+    noShowCount: 0,
   },
   {
     id: "u6",
@@ -90,6 +100,8 @@ export const users: User[] = [
     tripsCompleted: 4,
     carrySharesCompleted: 2,
     memberSince: "2025-09-30",
+    lateCancellationCount: 1,
+    noShowCount: 0,
   },
   {
     id: "u7",
@@ -104,6 +116,8 @@ export const users: User[] = [
     tripsCompleted: 10,
     carrySharesCompleted: 8,
     memberSince: "2025-01-22",
+    lateCancellationCount: 0,
+    noShowCount: 0,
   },
 ];
 
@@ -115,4 +129,14 @@ export function getCurrentUser(): User {
   const user = getUserById(CURRENT_USER_ID);
   if (!user) throw new Error("Current user not found in mock data");
   return user;
+}
+
+export function recordLateCancellation(userId: string): void {
+  const user = getUserById(userId);
+  if (user) user.lateCancellationCount += 1;
+}
+
+export function recordNoShow(userId: string): void {
+  const user = getUserById(userId);
+  if (user) user.noShowCount += 1;
 }

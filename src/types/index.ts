@@ -28,6 +28,9 @@ export interface User {
   tripsCompleted: number;
   carrySharesCompleted: number;
   memberSince: string; // ISO date
+  /** CarryShare Protection trust history. */
+  lateCancellationCount: number;
+  noShowCount: number;
 }
 
 export interface Review {
@@ -108,6 +111,69 @@ export interface Trip {
   flightId: string;
   listingId?: string;
   status: TripStatus;
+}
+
+// ---------------------------------------------------------------------------
+// CarryShare Protection
+//
+// A lightweight commitment-and-accountability layer between two matched
+// travelers. It is explicitly NOT insurance and does not process real
+// payments in this prototype — "authorizing" and "charging" a commitment
+// are mocked states only, modeling the UX for when real payments
+// (Stripe + Supabase) are wired in later.
+// ---------------------------------------------------------------------------
+
+export type CommitmentStatus = "pending" | "authorized" | "charged" | "refunded";
+
+export interface ProtectionCommitment {
+  userId: string;
+  amountCents: number;
+  status: CommitmentStatus;
+  authorizedAt?: string; // ISO datetime
+  reconfirmedAt?: string; // ISO datetime
+}
+
+export type ProtectionStatus =
+  | "awaiting_commitment" // one or both sides haven't authorized their share yet
+  | "committed" // both authorized, waiting on trip reconfirmation window
+  | "reconfirmed" // both reconfirmed before the cutoff
+  | "cancelled_no_penalty" // cancelled before cutoff, or airline disruption
+  | "cancelled_late" // self-reported cancellation after the cutoff
+  | "no_show_reported" // counterpart reported a no-show after the fact
+  | "resolved_charged" // claim reviewed: absent traveler's commitment charged
+  | "resolved_waived" // claim reviewed: penalty waived
+  | "completed"; // trip happened normally, commitments released
+
+export type CancellationReason = "traveler_cancelled" | "airline_disruption";
+
+export interface ProtectionCancellation {
+  byUserId: string;
+  reason: CancellationReason;
+  at: string; // ISO datetime
+}
+
+export type ClaimResolution = "pending" | "approved" | "denied";
+
+export interface NoShowClaim {
+  reportedByUserId: string;
+  aboutUserId: string;
+  submittedAt: string; // ISO datetime
+  receiptFileName?: string;
+  note?: string;
+  resolution: ClaimResolution;
+  resolvedAt?: string; // ISO datetime
+}
+
+export interface Protection {
+  id: string;
+  matchId: string;
+  totalAmountCents: number;
+  /** Deadline for both travelers to reconfirm — defaults to 6h before departure. */
+  reconfirmBy: string; // ISO datetime
+  status: ProtectionStatus;
+  commitments: [ProtectionCommitment, ProtectionCommitment];
+  cancellation?: ProtectionCancellation;
+  claim?: NoShowClaim;
 }
 
 export const ITEM_CATEGORY_LABELS: Record<ItemCategory, string> = {

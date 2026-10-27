@@ -1,4 +1,4 @@
-import { Mail, Phone, ShieldCheck } from "lucide-react";
+import { AlertTriangle, Mail, Phone, ShieldCheck } from "lucide-react";
 import { ProfileCard } from "@/components/profile/profile-card";
 import { TrustBadge } from "@/components/shared/trust-badge";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,32 @@ export default async function ProfilePage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6 sm:py-10">
       <ProfileCard user={user} />
+
+      <div className="mt-6 rounded-2xl bg-card p-5 shadow-sm ring-1 ring-foreground/10 sm:p-6">
+        <h2 className="font-heading text-base font-semibold text-foreground">
+          CarryShare Protection history
+        </h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Late cancellations and no-shows are tracked to help travelers trust
+          their matches.
+        </p>
+
+        {user.lateCancellationCount === 0 && user.noShowCount === 0 ? (
+          <p className="mt-3 text-sm text-teal-700">
+            Clean record — no late cancellations or no-shows.
+          </p>
+        ) : (
+          <div className="mt-3 flex items-start gap-2 rounded-xl bg-orange-50 p-3 text-sm text-orange-800">
+            <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+            <p>
+              {user.lateCancellationCount} late cancellation
+              {user.lateCancellationCount === 1 ? "" : "s"} and{" "}
+              {user.noShowCount} no-show{user.noShowCount === 1 ? "" : "s"} on
+              record.
+            </p>
+          </div>
+        )}
+      </div>
 
       <div className="mt-6 rounded-2xl bg-card p-5 shadow-sm ring-1 ring-foreground/10 sm:p-6">
         <h2 className="font-heading text-base font-semibold text-foreground">
