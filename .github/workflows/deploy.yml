@@ -1,8 +1,7 @@
 name: Deploy
 
+# Manual only: Actions → Deploy → Run workflow, then pick the branch to deploy.
 on:
-  push:
-    branches: [master]
   workflow_dispatch:
 
 # Never run two deploys at once; a newer push waits for the current one.
