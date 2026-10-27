@@ -1,0 +1,50 @@
+name: Deploy
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+# Never run two deploys at once; a newer push waits for the current one.
+concurrency:
+  group: deploy-cocarry
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm test
+
+  deploy:
+    needs: test
+    # Self-hosted runner "cocarry" on the server, registered to this repo with the "cocarrypipe" label.
+    runs-on: [self-hosted, cocarrypipe]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build and restart container
+        run: docker compose up -d --build --remove-orphans
+
+      - name: Health check
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS -o /dev/null http://127.0.0.1:3001; then
+              echo "cocarry is up"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "cocarry did not respond on 127.0.0.1:3001"
+          docker compose logs --tail=100
+          exit 1
+
+      - name: Clean up old images
+        if: always()
+        run: docker image prune -f
