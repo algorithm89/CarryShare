@@ -4,8 +4,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, MessageCircle, UserPlus } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { CURRENT_USER_ID, requestMatch } from "@/lib/services";
+import Link from "next/link";
+import { useSessionUser } from "@/components/auth/session-sync";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { requestMatch } from "@/lib/services";
 import type { MatchStatus } from "@/types";
 
 interface RequestMatchActionsProps {
@@ -24,11 +26,24 @@ export function RequestMatchActions({
   const router = useRouter();
   const [match, setMatch] = useState(initialMatch);
   const [submitting, setSubmitting] = useState(false);
+  const user = useSessionUser();
+
+  if (!user) {
+    return (
+      <Link
+        href={`/login?next=${encodeURIComponent(`/match/${listingId}`)}`}
+        className={buttonVariants({ size: "lg", className: "h-12 w-full" })}
+      >
+        Log in to request a match or message {travelerFirstName}
+      </Link>
+    );
+  }
 
   async function handleRequestMatch() {
+    if (!user) return;
     setSubmitting(true);
     try {
-      const created = await requestMatch(listingId, CURRENT_USER_ID);
+      const created = await requestMatch(listingId, user.id);
       const summary = { id: created.id, status: created.status };
       setMatch(summary);
       onMatchCreated?.(summary);

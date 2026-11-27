@@ -33,7 +33,7 @@ import {
   sendMessage as sendMessageRecord,
 } from "@/data/messages";
 import { getTripsForUser, upsertTripForListing } from "@/data/trips";
-import { CURRENT_USER_ID, getCurrentUser, getUserById } from "@/data/users";
+import { getCurrentUser, getCurrentUserId, getUserById } from "@/data/users";
 import {
   authorizeCommitment as authorizeCommitmentRecord,
   cancelProtection as cancelProtectionRecord,
@@ -91,11 +91,14 @@ export async function getUser(id: string): Promise<User | undefined> {
   return resolveAfterLatency(getUserById(id));
 }
 
+/** The logged-in user (set by SessionSync). Throws if nobody is logged in. */
 export async function getLoggedInUser(): Promise<User> {
-  return resolveAfterLatency(getCurrentUser());
+  const user = getCurrentUser();
+  if (!user) throw new Error("Not logged in");
+  return resolveAfterLatency(user);
 }
 
-export { CURRENT_USER_ID };
+export { getCurrentUserId };
 
 // ---------------------------------------------------------------------------
 // Listings
@@ -130,7 +133,7 @@ export async function getListing(
 }
 
 export async function getListingsForCurrentUser(): Promise<Listing[]> {
-  return resolveAfterLatency(getListingsForUser(CURRENT_USER_ID));
+  return resolveAfterLatency(getListingsForUser(getCurrentUserId() ?? ""));
 }
 
 export async function createListing(
@@ -165,7 +168,7 @@ function attachMatchDetails(match: Match): MatchWithDetails {
     throw new Error(`Incomplete mock data for match ${match.id}`);
   }
   const counterpart =
-    match.requesterId === CURRENT_USER_ID ? responder : requester;
+    match.requesterId === getCurrentUserId() ? responder : requester;
   const protectionStatus = getProtectionByMatchId(match.id)?.status;
   return {
     ...match,
@@ -198,14 +201,14 @@ export async function getMatchesForCurrentUser(): Promise<
   MatchWithDetails[]
 > {
   return resolveAfterLatency(
-    getMatchesForUser(CURRENT_USER_ID).map(attachMatchDetails)
+    getMatchesForUser(getCurrentUserId() ?? "").map(attachMatchDetails)
   );
 }
 
 export async function getMatchForListing(
   listingId: string
 ): Promise<MatchWithDetails | undefined> {
-  const existing = getMatchesForUser(CURRENT_USER_ID).find(
+  const existing = getMatchesForUser(getCurrentUserId() ?? "").find(
     (match) => match.listingId === listingId
   );
   return resolveAfterLatency(existing ? attachMatchDetails(existing) : undefined);
@@ -268,8 +271,9 @@ export interface TripWithDetails extends Trip {
 }
 
 export async function getTripsForCurrentUser(): Promise<TripWithDetails[]> {
-  const userTrips = getTripsForUser(CURRENT_USER_ID);
-  const userMatches = getMatchesForUser(CURRENT_USER_ID).map(
+  const currentUserId = getCurrentUserId() ?? "";
+  const userTrips = getTripsForUser(currentUserId);
+  const userMatches = getMatchesForUser(currentUserId).map(
     attachMatchDetails
   );
   const details = userTrips

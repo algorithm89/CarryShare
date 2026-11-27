@@ -9,10 +9,31 @@ import {
   reportNoShow,
   resolveClaim,
 } from "@/data/protection";
-import { getUserById } from "@/data/users";
+import { getUserById, upsertUser } from "@/data/users";
+import type { User } from "@/types";
+
+// The user directory starts empty, so seed the users these tests refer to.
+function testUser(id: string): User {
+  return {
+    id,
+    firstName: `Test ${id}`,
+    lastName: "User",
+    homeCity: "",
+    homeCountry: "",
+    verification: { identity: "unverified", email: "unverified", phone: "unverified" },
+    rating: 0,
+    reviewCount: 0,
+    tripsCompleted: 0,
+    carrySharesCompleted: 0,
+    memberSince: "2026-01-01",
+    lateCancellationCount: 0,
+    noShowCount: 0,
+  };
+}
+["u1", "u2", "u6"].forEach((id) => upsertUser(testUser(id)));
 
 // Every test creates its own protection with a unique matchId so tests don't
-// interfere with each other or with the seeded demo data (p1/p2/p3).
+// interfere with each other.
 let nextTestId = 0;
 function uniqueMatchId() {
   return `test-match-${++nextTestId}`;

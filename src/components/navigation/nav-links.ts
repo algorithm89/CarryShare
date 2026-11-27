@@ -11,15 +11,15 @@ export interface NavLink {
 
 export const NAV_LINKS: NavLink[] = [
   { label: "Find a Flight", href: "/", icon: Home },
-  { label: "My Trips", href: "/trips", icon: Luggage },
+  { label: "My Trips", href: "/trips", icon: Luggage, requiresAuth: true },
   { label: "Messages", href: "/messages", icon: MessageCircle, requiresAuth: true },
   { label: "Profile", href: "/profile", icon: User, requiresAuth: true },
 ];
 
 export const MOBILE_NAV_LINKS: NavLink[] = [
   { label: "Home", href: "/", icon: Home },
-  { label: "Trips", href: "/trips", icon: Luggage },
-  { label: "List", href: "/create-listing", icon: PlusCircle },
+  { label: "Trips", href: "/trips", icon: Luggage, requiresAuth: true },
+  { label: "List", href: "/create-listing", icon: PlusCircle, requiresAuth: true },
   { label: "Messages", href: "/messages", icon: MessageCircle, requiresAuth: true },
   { label: "Profile", href: "/profile", icon: User, requiresAuth: true },
 ];
