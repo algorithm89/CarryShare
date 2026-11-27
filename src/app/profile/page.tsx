@@ -2,11 +2,11 @@ import { AlertTriangle, Mail, Phone, ShieldCheck } from "lucide-react";
 import { ProfileCard } from "@/components/profile/profile-card";
 import { TrustBadge } from "@/components/shared/trust-badge";
 import { Button } from "@/components/ui/button";
-import { getLoggedInUser } from "@/lib/services";
+import { requireUser } from "@/lib/session";
 import type { VerificationStatus } from "@/types";
 
 export default async function ProfilePage() {
-  const user = await getLoggedInUser();
+  const user = await requireUser("/profile");
 
   const verificationItems: {
     icon: typeof ShieldCheck;

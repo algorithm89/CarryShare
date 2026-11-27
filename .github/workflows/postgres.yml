@@ -1,0 +1,83 @@
+name: Postgres
+
+# Manual only: Actions → Postgres → Run workflow, then pick an action.
+#   deploy  – create/start PostgreSQL 17 (keeps existing data)
+#   delete  – stop and remove the container, KEEP the data volume
+#   destroy – remove the container AND the data volume (all data is lost);
+#             you must type "destroy" in the confirm box
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: What to do
+        type: choice
+        options:
+          - deploy
+          - delete
+          - destroy
+        default: deploy
+      confirm:
+        description: 'Type "destroy" to confirm wiping the data (only for destroy)'
+        type: string
+        required: false
+
+concurrency:
+  group: postgres-cocarry
+  cancel-in-progress: false
+
+jobs:
+  postgres:
+    runs-on: [self-hosted, cocarrypipe]
+    env:
+      POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+      POSTGRES_DB: ${{ secrets.POSTGRES_DB || 'cocarry' }}
+      COMPOSE_FILE: docker-compose.db.yml
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check secrets
+        if: inputs.action == 'deploy'
+        run: |
+          if [ -z "$POSTGRES_USER" ] || [ -z "$POSTGRES_PASSWORD" ]; then
+            echo "Set POSTGRES_USER and POSTGRES_PASSWORD in Settings → Secrets and variables → Actions"
+            exit 1
+          fi
+
+      - name: Deploy
+        if: inputs.action == 'deploy'
+        run: |
+          docker network inspect cocarry >/dev/null 2>&1 || docker network create cocarry
+          docker compose up -d --wait
+          docker compose ps
+
+      - name: Apply schema
+        if: inputs.action == 'deploy'
+        # db/schema.sql is idempotent (CREATE ... IF NOT EXISTS), so this is safe on every run.
+        run: |
+          docker exec -i cocarry-postgres \
+            psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" < db/schema.sql
+
+      - name: Delete (keep data)
+        if: inputs.action == 'delete'
+        # Dummy values: compose needs the variables set even to tear down.
+        env:
+          POSTGRES_USER: x
+          POSTGRES_PASSWORD: x
+        run: |
+          docker compose down
+          echo "Container removed. Data volume cocarry-pgdata kept."
+
+      - name: Destroy (wipe data)
+        if: inputs.action == 'destroy'
+        env:
+          POSTGRES_USER: x
+          POSTGRES_PASSWORD: x
+          CONFIRM: ${{ inputs.confirm }}
+        run: |
+          if [ "$CONFIRM" != "destroy" ]; then
+            echo 'Refusing to wipe data: type "destroy" in the confirm box.'
+            exit 1
+          fi
+          docker compose down --volumes
+          echo "Container and data volume cocarry-pgdata removed."

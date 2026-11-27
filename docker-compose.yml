@@ -7,3 +7,19 @@ services:
     # Bound to localhost only; the reverse proxy on the host routes cocarry.net here.
     ports:
       - "127.0.0.1:3001:3000"
+    # Database connection (read by the `pg` driver). Values come from the
+    # Deploy workflow's secrets; the DB runs in the "cocarry-db" compose project.
+    environment:
+      PGHOST: cocarry-postgres
+      PGPORT: "5432"
+      PGUSER: ${POSTGRES_USER:?POSTGRES_USER is not set}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is not set}
+      PGDATABASE: ${POSTGRES_DB:-cocarry}
+    networks:
+      - cocarry
+
+networks:
+  # Shared with the Postgres container (created by the Postgres workflow).
+  cocarry:
+    name: cocarry
+    external: true

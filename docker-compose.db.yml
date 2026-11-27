@@ -1,0 +1,42 @@
+# PostgreSQL for CarryShare. Its own compose project ("cocarry-db"), so the app
+# deploy (`docker compose up --remove-orphans`) never touches it, and it can be
+# created or deleted on its own from the "Postgres" workflow.
+name: cocarry-db
+
+services:
+  postgres:
+    image: postgres:17
+    container_name: cocarry-postgres
+    restart: unless-stopped
+    environment:
+      # Supplied by the workflow from GitHub secrets. They only take effect the
+      # first time the data volume is created; changing them later does nothing
+      # unless the volume is destroyed (or you ALTER USER inside the database).
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is not set}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is not set}
+      POSTGRES_DB: ${POSTGRES_DB:-cocarry}
+    volumes:
+      - cocarry-pgdata:/var/lib/postgresql/data
+    # Localhost only, never exposed to the internet. 5433 avoids clashing with
+    # any other Postgres on the shared server. Reach it from your PC with an
+    # SSH tunnel: ssh -L 5433:127.0.0.1:5433 root@<server>
+    ports:
+      - "127.0.0.1:5433:5432"
+    networks:
+      - cocarry
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  cocarry-pgdata:
+    name: cocarry-pgdata
+
+networks:
+  # Shared network the app container can join later to reach the DB as
+  # "cocarry-postgres:5432". Created by the workflow.
+  cocarry:
+    name: cocarry
+    external: true

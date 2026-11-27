@@ -2,14 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { LogOut } from "lucide-react";
+import { logout } from "@/app/actions/auth";
 import { Logo } from "@/components/shared/logo";
 import { TravelerAvatar } from "@/components/shared/traveler-avatar";
-import { NAV_LINKS } from "@/components/navigation/nav-links";
+import { NAV_LINKS, visibleLinks } from "@/components/navigation/nav-links";
 import { cn } from "@/lib/utils";
 import type { User } from "@/types";
 
 interface SiteHeaderProps {
-  currentUser: User;
+  currentUser: User | null;
 }
 
 export function SiteHeader({ currentUser }: SiteHeaderProps) {
@@ -21,7 +23,7 @@ export function SiteHeader({ currentUser }: SiteHeaderProps) {
         <Logo />
 
         <nav className="hidden items-center gap-1 md:flex">
-          {NAV_LINKS.map((link) => {
+          {visibleLinks(NAV_LINKS, Boolean(currentUser)).map((link) => {
             const active =
               link.href === "/" ? pathname === "/" : pathname.startsWith(link.href);
             return (
@@ -48,15 +50,44 @@ export function SiteHeader({ currentUser }: SiteHeaderProps) {
         </nav>
 
         <div className="flex items-center gap-2">
-          <Link
-            href="/create-listing"
-            className="hidden rounded-lg bg-primary px-3.5 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 md:inline-flex"
-          >
-            Create a listing
-          </Link>
-          <Link href="/profile" aria-label="Profile" className="md:hidden">
-            <TravelerAvatar user={currentUser} size="sm" />
-          </Link>
+          {currentUser ? (
+            <>
+              <Link
+                href="/create-listing"
+                className="hidden rounded-lg bg-primary px-3.5 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 md:inline-flex"
+              >
+                Create a listing
+              </Link>
+              <Link href="/profile" aria-label="Profile">
+                <TravelerAvatar user={currentUser} size="sm" />
+              </Link>
+              <form action={logout}>
+                <button
+                  type="submit"
+                  aria-label="Log out"
+                  title="Log out"
+                  className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <LogOut className="size-4" />
+                </button>
+              </form>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                Log in
+              </Link>
+              <Link
+                href="/register"
+                className="rounded-lg bg-primary px-3.5 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+              >
+                Sign up
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </header>
