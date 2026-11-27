@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CURRENT_USER_ID, getListingsForFlightWithTravelers } from "@/lib/services";
+import { getCurrentUserId, getListingsForFlightWithTravelers } from "@/lib/services";
 import type { ListingWithTraveler } from "@/lib/services";
 import { cn } from "@/lib/utils";
 import { ITEM_CATEGORY_LABELS, type Flight, type ItemCategory } from "@/types";
@@ -65,7 +65,7 @@ export function SearchResults({ flights, initialFlightId }: SearchResultsProps) 
       if (!cancelled) {
         setResults({
           key: queryKey,
-          listings: result.filter((listing) => listing.userId !== CURRENT_USER_ID),
+          listings: result.filter((listing) => listing.userId !== getCurrentUserId()),
         });
       }
     });

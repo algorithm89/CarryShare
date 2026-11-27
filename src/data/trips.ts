@@ -1,20 +1,6 @@
 import type { Trip } from "@/types";
 
-export const trips: Trip[] = [
-  {
-    id: "t1",
-    userId: "u1",
-    flightId: "f1",
-    listingId: "l5",
-    status: "upcoming",
-  },
-  {
-    id: "t2",
-    userId: "u1",
-    flightId: "f6",
-    status: "completed",
-  },
-];
+export const trips: Trip[] = [];
 
 let nextTripId = trips.length + 1;
 
