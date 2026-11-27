@@ -4,7 +4,7 @@ import "./globals.css";
 import { SiteHeader } from "@/components/navigation/site-header";
 import { MobileNav } from "@/components/navigation/mobile-nav";
 import { Toaster } from "@/components/ui/sonner";
-import { getLoggedInUser } from "@/lib/services";
+import { getSessionUser } from "@/lib/session";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const currentUser = await getLoggedInUser();
+  const currentUser = await getSessionUser();
 
   return (
     <html
@@ -33,7 +33,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       <body className="flex min-h-full flex-col bg-background text-foreground">
         <SiteHeader currentUser={currentUser} />
         <main className="flex-1 pb-20 md:pb-0">{children}</main>
-        <MobileNav />
+        <MobileNav loggedIn={Boolean(currentUser)} />
         <Toaster position="top-center" />
       </body>
     </html>

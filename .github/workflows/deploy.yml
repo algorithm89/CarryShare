@@ -25,8 +25,19 @@ jobs:
     needs: test
     # Self-hosted runner "cocarry" on the server, registered to this repo with the "cocarrypipe" label.
     runs-on: [self-hosted, cocarrypipe]
+    env:
+      POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+      POSTGRES_DB: ${{ secrets.POSTGRES_DB || 'cocarry' }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Check database is running
+        run: |
+          if [ "$(docker inspect -f '{{.State.Running}}' cocarry-postgres 2>/dev/null)" != "true" ]; then
+            echo "cocarry-postgres is not running. Run the Postgres workflow (action: deploy) first."
+            exit 1
+          fi
 
       - name: Build and restart container
         run: docker compose up -d --build --remove-orphans

@@ -51,6 +51,13 @@ jobs:
           docker compose up -d --wait
           docker compose ps
 
+      - name: Apply schema
+        if: inputs.action == 'deploy'
+        # db/schema.sql is idempotent (CREATE ... IF NOT EXISTS), so this is safe on every run.
+        run: |
+          docker exec -i cocarry-postgres \
+            psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" < db/schema.sql
+
       - name: Delete (keep data)
         if: inputs.action == 'delete'
         # Dummy values: compose needs the variables set even to tear down.

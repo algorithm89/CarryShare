@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MOBILE_NAV_LINKS } from "@/components/navigation/nav-links";
+import { MOBILE_NAV_LINKS, visibleLinks } from "@/components/navigation/nav-links";
 import { cn } from "@/lib/utils";
 
-export function MobileNav() {
+export function MobileNav({ loggedIn }: { loggedIn: boolean }) {
   const pathname = usePathname();
 
   return (
@@ -14,7 +14,7 @@ export function MobileNav() {
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
     >
       <div className="mx-auto flex max-w-6xl items-stretch justify-between px-2">
-        {MOBILE_NAV_LINKS.map((link) => {
+        {visibleLinks(MOBILE_NAV_LINKS, loggedIn).map((link) => {
           const active =
             link.href === "/" ? pathname === "/" : pathname.startsWith(link.href);
           const isCreate = link.href === "/create-listing";
